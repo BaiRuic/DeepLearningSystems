@@ -87,7 +87,8 @@ def softmax_loss(Z, y):
         Average softmax loss over the sample.
     """
     ### BEGIN YOUR CODE
-    pass
+    temp = np.log(np.sum(np.exp(Z), axis=1)) - Z[np.arange(len(y)), y]
+    return np.mean(temp)
     ### END YOUR CODE
 
 
