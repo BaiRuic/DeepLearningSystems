@@ -131,6 +131,12 @@ def softmax_regression_epoch(X, y, theta, lr = 0.1, batch=100):
     ### END YOUR CODE
 
 
+def relu(X):
+    return np.where(X>0, X, 0)
+
+def drelu(X):
+    return np.where(X>0, 1, 0)
+
 def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
     """ Run a single epoch of SGD for a two-layer neural network defined by the
     weights W1 and W2 (with no bias terms):
@@ -154,7 +160,25 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    for i in range(0, X.shape[0], batch):
+        # forward
+        Z1 = X[i:min(i+batch, X.shape[0])]
+        y_ = y[i:min(i+batch, y.shape[0])]
+        
+        Z2 = relu((Z1 @ W1))
+        S = Z2 @ W2
+        S = np.exp(S)
+        S = S / np.sum(S, axis=1, keepdims=True)
+        I = np.zeros_like(S)
+        I[np.arange(len(y_)), y_] = 1
+        
+        # backward
+        dW1 = (Z1.T @ (drelu(Z1 @ W1) * ((S-I) @ W2.T))) / batch
+        dW2 = (Z2.T @ (S - I)) / batch
+
+        W1 -= lr * dW1
+        W2 -= lr * dW2
+
     ### END YOUR CODE
 
 
