@@ -16,6 +16,7 @@ class EWiseAdd(TensorOp):
         return a + b
 
     def gradient(self, out_grad: Tensor, node: Tensor):
+        # 这里 是构建计算图，所以数据类型为 Tensor。且返回了两个节点
         return out_grad, out_grad
 
 

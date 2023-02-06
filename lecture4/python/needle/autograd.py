@@ -123,10 +123,10 @@ class Value:
         if self.cached_data is not None:
             return self.cached_data
         # note: data implicitly calls realized cached data
+        # 每一个 op 实例均有 compute 这个函数，返回的是计算结果，类型不是Tensor,而是 NDarray。
         self.cached_data = self.op.compute(
             *[x.realize_cached_data() for x in self.inputs]
         )
-        self.cached_data
         return self.cached_data
 
     def is_leaf(self):
@@ -254,6 +254,7 @@ class Tensor(Value):
 
     @staticmethod
     def make_from_op(op: Op, inputs: List["Value"]):
+        # 此处新创建了一个 Tensor, 算是创建了一个节点, 该节点已经包含了输入和操作, 就差计算节点结果了
         tensor = Tensor.__new__(Tensor)
         tensor._init(op, inputs)
         if not LAZY_MODE:
@@ -307,6 +308,7 @@ class Tensor(Value):
         return data.device
 
     def backward(self, out_grad=None):
+        # 这里面为什么要创建 全1Tensor？搞不懂 不应该是单位Tensor吗
         out_grad = out_grad if out_grad else Tensor(numpy.ones(self.shape))
         compute_gradient_of_variables(self, out_grad)
 
