@@ -44,7 +44,9 @@ class EWiseMul(TensorOp):
         return a * b
 
     def gradient(self, out_grad: Tensor, node: Tensor):
+        # 该节点左输入，右输入
         lhs, rhs = node.inputs
+        # 会创建出两个节点
         return out_grad * rhs, out_grad * lhs
 
 
