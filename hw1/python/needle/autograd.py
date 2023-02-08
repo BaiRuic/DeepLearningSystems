@@ -2,6 +2,7 @@
 import needle
 from typing import List, Optional, NamedTuple, Tuple, Union
 from collections import namedtuple
+from collections import defaultdict 
 import numpy
 
 # needle version
@@ -411,14 +412,23 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
     sort.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    topo_order = []
+    visited = set()
+    for cur_node in node_list:
+        topo_sort_dfs(cur_node, visited, topo_order)
+    return topo_order
     ### END YOUR SOLUTION
 
 
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    if node in visited:
+        return
+    for in_node in node.inputs:
+        topo_sort_dfs(in_node, visited, topo_order)
+    topo_order.append(node)
+    visited.add(node)
     ### END YOUR SOLUTION
 
 
