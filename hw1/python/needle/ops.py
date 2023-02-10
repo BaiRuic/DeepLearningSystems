@@ -329,16 +329,14 @@ def exp(a):
 class ReLU(TensorOp):
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        # self.mask = (a > 0).astype("int8")
-        # return array_api.multiply(a, self.mask)
-        return array_api.maximum(a, 0)
+        self.mask = (a > 0).astype("int8")
+        return array_api.multiply(a, self.mask)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        # return multiply(out_grad, self.mask)
-        grad = divide(relu(node.inputs[0]), node.inputs[0])
-        return (multiply(out_grad, grad),) # a deliberate tuple
+        # 这里只能使用 mul_saclar
+        return mul_scalar(out_grad, self.mask)
         ### END YOUR SOLUTION
 
 

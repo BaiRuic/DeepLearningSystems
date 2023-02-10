@@ -34,7 +34,7 @@ def parse_mnist(image_filesname, label_filename):
         majic_num, imgs_num, row_num, cols_num = struct.unpack('>IIII', img_file.read(16))
         img_list = []
         for _ in range(imgs_num):
-            img_row = struct.unpack(f'>{row_num * cols_num}b', img_file.read(row_num * cols_num))
+            img_row = struct.unpack(f'>{row_num * cols_num}B', img_file.read(row_num * cols_num))
             img_list.append(np.array(img_row, dtype=np.float32))
         X = np.stack(img_list)
         X = X.astype(np.float32)
@@ -45,7 +45,7 @@ def parse_mnist(image_filesname, label_filename):
 
     with gzip.open(label_filename, 'rb') as lab_file:
         magic_num, item_num = struct.unpack(">2I", lab_file.read(8))
-        lab_row = struct.unpack(f'>{item_num}b', lab_file.read(item_num))
+        lab_row = struct.unpack(f'>{item_num}B', lab_file.read(item_num))
         y = np.array(lab_row, dtype=np.int8)
     
 
@@ -109,7 +109,7 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         X_ = X[i: i+batch]
         y_ = y[i: i+batch]
 
-        X_ = ndl.Tensor(X_, dtype="flaot32")
+        X_ = ndl.Tensor(X_, dtype="float32")
         Z = ndl.matmul(ndl.relu(ndl.matmul(X_, W1)), W2)
 
         y_one_hot = np.zeros(Z.shape)
