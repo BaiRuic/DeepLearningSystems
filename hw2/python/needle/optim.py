@@ -25,7 +25,23 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for p in self.params:
+            if p.grad is None:
+                continue
+            grad = p.grad.data
+
+            # Perform weight decay
+            grad += self.weight_decay * p.data
+            
+            # Initialize momentum
+            if p not in self.u:
+                self.u[p] = ndl.init.zeros(*(p.shape), requires_grad=False)
+
+            # # Update momentum
+            self.u[p] = self.momentum * self.u[p] + (1. - self.momentum) * grad
+            
+            # # Update parameter
+            p.data -= self.lr * self.u[p]
         ### END YOUR SOLUTION
 
 
@@ -52,5 +68,29 @@ class Adam(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.t += 1
+        for param in self.params:
+            if param.grad is None:
+                continue
+            grad = param.grad.data
+            
+            # Perform weight decat
+            grad += self.weight_decay * param.data
+            
+            # Initialize moving averages
+            if param not in self.m:
+                self.m[param] = ndl.init.zeros(*(param.shape), requires_grad=False)
+                self.v[param] = ndl.init.zeros(*(param.shape), requires_grad=False)
+            
+            # Update moving averages
+            self.m[param] = self.beta1 * self.m[param] + (1 - self.beta1) * grad
+            self.v[param] = self.beta2 * self.v[param] + (1 - self.beta2) * ndl.power_scalar(grad, 2)
+
+            # Bias correction
+            m_hat = self.m[param] / (1 - pow(self.beta1, self.t))
+            v_hat = self.v[param] / (1 - pow(self.beta2, self.t))
+            
+            # Update parameter
+            param.data -= self.lr * m_hat / (ndl.power_scalar(v_hat, 0.5) + self.eps)
+        
         ### END YOUR SOLUTION
