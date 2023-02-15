@@ -147,7 +147,8 @@ class SoftmaxLoss(Module):
         ### BEGIN YOUR SOLUTION
         log_sum_exp = ops.logsumexp(logits, axes=(1,))
         y_one_hot = init.one_hot(n=logits.shape[1], i=y)
-        loss = (ops.summation(log_sum_exp - ops.summation(y_one_hot * logits, axes=(1,)))) / logits.shape[0]
+        loss = ops.summation(log_sum_exp - ops.summation(y_one_hot * logits, axes=(1,)))
+        loss = loss / logits.shape[0]
         return loss
         ### END YOUR SOLUTION
 
@@ -180,17 +181,18 @@ class BatchNorm1d(Module):
             std_keepdims = std.broadcast_to(x.shape)
 
             # 移动平均
-            self.running_mean = (1-self.momentum) * self.running_mean + self.momentum * mean 
-            self.running_var = (1-self.momentum) * self.running_var + self.momentum * var
+            self.running_mean.data = (1-self.momentum) * self.running_mean.data + self.momentum * mean 
+            self.running_var.data = (1-self.momentum) * self.running_var.data + self.momentum * var
 
             y = (x - mean_keepdims) / std_keepdims
+            
             return self.weight.broadcast_to(x.shape) * y + self.bias.broadcast_to(x.shape) 
         else:
             mean_keepdims = self.running_mean.broadcast_to(x.shape)
             std_keepdims = ops.power_scalar(self.running_var+self.eps, 0.5).broadcast_to(x.shape)
             y = (x - mean_keepdims) / std_keepdims
-            weight = self.weight.realize_cached_data().broadcast_to(x.shape)
-            bias = self.bias.realize_cached_data().broadcast_to(x.shape)
+            weight = self.weight.broadcast_to(x.shape)
+            bias = self.bias.broadcast_to(x.shape)
             return weight * y + bias
         ### END YOUR SOLUTION
 
