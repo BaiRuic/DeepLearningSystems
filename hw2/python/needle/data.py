@@ -120,16 +120,13 @@ class DataLoader:
         ### BEGIN YOUR SOLUTION
         if self.cur_batch_id >= len(self.ordering):
             raise StopIteration
-        batch_data_X = [self.dataset[i][0] for i in self.ordering[self.cur_batch_id]]
-        batch_data_X = Tensor(batch_data_X)
-        if len(self.dataset[0]) == 1:
-            batch_data = (batch_data_X, )
-        else:
-            
-            batch_data_y = [self.dataset[i][1] for i in self.ordering[self.cur_batch_id]]
-            batch_data_y = Tensor(batch_data_y)
-            batch_data = (batch_data_X, batch_data_y)
+
+        batch_indexs = self.ordering[self.cur_batch_id]
         self.cur_batch_id += 1
+
+        batch_data = self.dataset[batch_indexs]
+        batch_data = tuple(map(lambda X : Tensor(X, dtype=X.dtype, requires_grad=False), batch_data))
+        
         return batch_data
         ### END YOUR SOLUTION
 
@@ -164,7 +161,7 @@ class MNISTDataset(Dataset):
             y = np.array(struct.unpack(f">{labs_num}B", lab_file.read(labs_num)), dtype="int8")
         
         X = (X - X.min()) / (X.max() - X.min())
-
+        # 这里需要修改图像格式
         X = X.reshape(imgs_num, rows, cols, 1)
         return X, y
 
