@@ -429,11 +429,9 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     ### BEGIN YOUR SOLUTION
     for node in reverse_topo_order:
         node.grad = sum(node_to_output_grads_list[node])
-        print(node.grad, type(node.grad))
         if node.is_leaf():
             continue
         grad_to_node = node.op.gradient_as_tuple(node.grad, node)
-        print('grad_to_node', grad_to_node)
         for input_node, grad in zip(node.inputs, grad_to_node):
             node_to_output_grads_list[input_node].append(grad)           
     ### END YOUR SOLUTION
