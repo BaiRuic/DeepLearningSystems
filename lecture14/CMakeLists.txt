@@ -1,18 +1,34 @@
 cmake_minimum_required(VERSION 3.2)
 project(needle C CXX)
 
+# 注：Python使用了系统默认的
+# Pybind11使用了 dlsys环境下面的
+
 # find correct version of Python
+# 找系统默认的 Python，在linux中，默认python位于 usr/bin
 execute_process(COMMAND python3-config --prefix
   OUTPUT_VARIABLE Python_ROOT_DIR)
+
+# 参考https://cmake.org/cmake/help/latest/module/FindPython.html
+# 不想使用系统目录下的 Python，因此通过指定 Python3_ROOT_DIR 改变查找路径
+# find_package(Python ..) 会定义 Python_INCLUDE_DIRS 等变量
+# 注意：如果 Interpreter 和 Development 组件都被指定的话，
+# 这个模块只会搜索 Cmake 配置的平台架构的解释器。
+# 如果仅指定了 Interpreter 组件的话，这个约束不会生效。
+# 因此，此处依旧是搜索默认解释器。
+set(Python3_ROOT_DIR /home/brc/miniconda3/envs/dlsys)
 find_package(Python COMPONENTS Development Interpreter REQUIRED)
 include_directories(${Python_INCLUDE_DIRS})
 
 # find pybind
 execute_process(COMMAND python3 -m pybind11 --cmakedir
   RESULT_VARIABLE __pybind_exit_code
-  OUTPUT_VARIABLE __pybind_path
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-find_package(pybind11 PATHS ${__pybind_path})
+  OUTPUT_VARIABLE pybind11_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE) # 可以删除运行命令的标准输出中的任何尾随空 格
+# set pybind11 dir 
+# 这里手动设置 pybind11_DIR。具体值为通过 python3 -m pybind11 --cmakedir 在对应环境下 运行得到的
+set(pybind11_DIR /home/brc/miniconda3/envs/dlsys/lib/python3.8/site-packages/pybind11/share/cmake/pybind11)
+find_package(pybind11)
 
 
 if(NOT MSVC)
@@ -23,6 +39,7 @@ else()
   set(CMAKE_CUDA_STANDARD 14)
 endif()
 
+# 是通过 find_package(pybind11) 创建的变量 
 include_directories(SYSTEM ${pybind11_INCLUDE_DIRS})
 list(APPEND LINKER_LIBS ${pybind11_LIBRARIES})
 
