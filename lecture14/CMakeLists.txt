@@ -41,25 +41,32 @@ endif()
 
 # 是通过 find_package(pybind11) 创建的变量 
 include_directories(SYSTEM ${pybind11_INCLUDE_DIRS})
+# 引入一个变量 LINKER_LIBS ，包括 ${pybind11_LIBRARIES}
 list(APPEND LINKER_LIBS ${pybind11_LIBRARIES})
 
 
 ###################
 ### CPU BACKEND ###
 ###################
+# 将指定的源码编译到库中
+# MODULE 为创建库的一种：不链接到项目中的任何目标，不过可以进行动态加载
 add_library(ndarray_backend_cpu MODULE src/ndarray_backend_cpu.cc)
+# 将库链接到可执行文件
 target_link_libraries(ndarray_backend_cpu PUBLIC ${LINKER_LIBS})
+
 pybind11_extension(ndarray_backend_cpu)
 pybind11_strip(ndarray_backend_cpu)
 
 
 # directly output to ffi folder
+# 设置 链接库的输出位置
 set_target_properties(ndarray_backend_cpu
   PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/needle/backend_ndarray
   CXX_VISIBILITY_PRESET "hidden"
 )
 
+# 针对达尔文(Macos)操作系统专门设置属性
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set_property(TARGET ndarray_backend_cpu PROPERTY LINK_OPTIONS -undefined dynamic_lookup)
 endif()
