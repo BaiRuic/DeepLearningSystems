@@ -5,3 +5,5 @@ test.ipynb
 *.json
 *.so
 build/ 
+CMakeFiles/
+CMakeCache.txt
