@@ -257,17 +257,18 @@ void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
 }  // namespace cpu
 }  // namespace needle
 
-PYBIND11_MODULE(ndarray_backend_cpu, m) {
+PYBIND11_MODULE(ndarray_backend_cpu, m) { // 创建一个 Python 模块，名为 api ，用变量 m 表示
   namespace py = pybind11;
   using namespace needle;
   using namespace cpu;
 
-  m.attr("__device_name__") = "cpu";
+  m.attr("__device_name__") = "cpu"; // 给模块 m 定义一个变量 __device_name__,用常量赋值
   m.attr("__tile_size__") = TILE;
 
+  // 用 class_ 可以绑定一个 C++ 的 class 或 struct
   py::class_<AlignedArray>(m, "Array")
-      .def(py::init<size_t>(), py::return_value_policy::take_ownership)
-      .def("ptr", &AlignedArray::ptr_as_int)
+      .def(py::init<size_t>(), py::return_value_policy::take_ownership) // 绑定构造函数（用 py::init<> 包装初始化参数）类的构造函数需要主动绑定，而析构函数会自动绑定，且会自动被 Python 的内存回收机制调用。
+      .def("ptr", &AlignedArray::ptr_as_int)  // 绑定类方法
       .def_readonly("size", &AlignedArray::size);
 
   // return numpy array (with copying for simplicity, otherwise garbage
