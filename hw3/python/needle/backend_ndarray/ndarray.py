@@ -241,7 +241,12 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # only modify the shape and stride
+        if prod(self.shape) != prod(new_shape) or not self.is_compact():
+            raise ValueError
+        self._shape = new_shape
+        self._strides = NDArray.compact_strides(self._shape)
+        return self
         ### END YOUR SOLUTION
 
     def permute(self, new_axes):
@@ -264,12 +269,22 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_shape = list(range(self.ndim))
+        for i in range(len(new_axes)):
+            new_shape[i] = self._shape[new_axes[i]]
+        self._shape = tuple(new_shape)
+
+        new_strides = list(range(self.ndim))
+        for i in range(len(new_axes)):
+            new_strides[i] = self._strides[new_axes[i]]
+        self._strides = tuple(new_strides)
+
+        return self
         ### END YOUR SOLUTION
 
     def broadcast_to(self, new_shape):
         """
-        Broadcast an array to a new shape.  new_shape's elements must be the
+        Broadcast an array to a new shape. new_shape's elements must be the
         same as the original shape, except for dimensions in the self where
         the size = 1 (which can then be broadcast to any size).  As with the
         previous calls, this will not copy memory, and just achieves
@@ -285,7 +300,23 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # not add dims or add dims
+        added_axes = list(range(len(new_shape) - len(self._shape)))
+        for i in range(-1, -len(self._shape)-1, -1):
+            if new_shape[i] != self._shape[i]:
+                if self._shape[i] != 1:
+                    raise ValueError
+                else:
+                    added_axes.append(i)
+
+        new_strides = list(range(len(new_shape) - len(self._shape))) + list(self._strides)
+        
+        for ax in added_axes:
+            new_strides[ax] = 0
+        self._shape = tuple(new_shape)
+        self._strides = tuple(new_strides)
+
+        return self
         ### END YOUR SOLUTION
 
     ### Get and set elements
@@ -348,7 +379,34 @@ class NDArray:
         assert len(idxs) == self.ndim, "Need indexes equal to number of dimensions"
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_shape = [0] * self.ndim
+        new_strides = [0] * self.ndim
+        new_offset = 0
+
+        # calculate new shape
+        for i in range(0, self.ndim):
+            new_shape[i] = math.ceil((idxs[i].stop - idxs[i].start) / idxs[i].step)
+
+        # calculate new strides
+        items = 1
+        for i in range(-1, -self.ndim-1, -1):
+            new_strides[i] = items * idxs[i].step
+            items *= (self._shape[i])
+            print(items)
+        
+        # calculate offset
+        # Firstly, get the product of the suffix array
+        suffix = [1] * self.ndim
+        for i in range(-2, -self.ndim-1, -1):
+            suffix[i] = suffix[i+1] * self._shape[i+1]
+        # Then, add up the offsets of each dimension
+        for i in range(0, self.ndim):
+            new_offset += idxs[i].start * suffix[i] 
+
+        self._shape = tuple(new_shape)
+        self._strides = tuple(new_strides)
+        self._offset = new_offset
+        return self
         ### END YOUR SOLUTION
 
     def __setitem__(self, idxs, other):
