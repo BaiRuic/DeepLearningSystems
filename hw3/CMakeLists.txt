@@ -12,7 +12,12 @@ execute_process(COMMAND python3 -m pybind11 --cmakedir
   RESULT_VARIABLE __pybind_exit_code
   OUTPUT_VARIABLE __pybind_path
   OUTPUT_STRIP_TRAILING_WHITESPACE)
-find_package(pybind11 PATHS ${__pybind_path})
+# if not find pybind in root, just set pybind11_DIR manually.
+if(__pybind_exit_code AND NOT __pybind_exit_code EQUAL 0)
+  set(pybind11_DIR /home/brc/miniconda3/envs/dls_course/lib/python3.8/site-packages/pybind11/share/cmake/pybind11)
+endif()
+
+find_package(pybind11 PATHS ${pybind11_DIR})
 
 
 if(NOT MSVC)
