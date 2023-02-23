@@ -215,12 +215,13 @@ class NDArray:
             )
             return out
 
-    def as_strided(self, shape, strides):
+    def as_strided(self, shape, strides, offset=0):
         """ Restride the matrix without copying memory. """
         assert len(shape) == len(strides)
-        return NDArray.make(
-            shape, strides=strides, device=self.device, handle=self._handle
-        )
+        return NDArray.make(shape, strides=strides, 
+                            device=self.device, 
+                            handle=self._handle, 
+                            offset=offset,)
 
     @property
     def flat(self):
@@ -244,9 +245,10 @@ class NDArray:
         # only modify the shape and stride
         if prod(self.shape) != prod(new_shape) or not self.is_compact():
             raise ValueError
-        self._shape = new_shape
-        self._strides = NDArray.compact_strides(self._shape)
-        return self
+        
+        new_strides = NDArray.compact_strides(new_shape)
+        return self.as_strided(shape=new_shape, 
+                               strides=new_strides)
         ### END YOUR SOLUTION
 
     def permute(self, new_axes):
@@ -272,14 +274,14 @@ class NDArray:
         new_shape = list(range(self.ndim))
         for i in range(len(new_axes)):
             new_shape[i] = self._shape[new_axes[i]]
-        self._shape = tuple(new_shape)
+        
 
         new_strides = list(range(self.ndim))
         for i in range(len(new_axes)):
             new_strides[i] = self._strides[new_axes[i]]
-        self._strides = tuple(new_strides)
-
-        return self
+        
+        return self.as_strided(shape=tuple(new_shape), 
+                               strides=tuple(new_strides))
         ### END YOUR SOLUTION
 
     def broadcast_to(self, new_shape):
@@ -313,10 +315,9 @@ class NDArray:
         
         for ax in added_axes:
             new_strides[ax] = 0
-        self._shape = tuple(new_shape)
-        self._strides = tuple(new_strides)
 
-        return self
+        return self.as_strided(shape=tuple(new_shape), 
+                               strides=tuple(new_strides))
         ### END YOUR SOLUTION
 
     ### Get and set elements
@@ -392,7 +393,7 @@ class NDArray:
         for i in range(-1, -self.ndim-1, -1):
             new_strides[i] = items * idxs[i].step
             items *= (self._shape[i])
-            print(items)
+
         
         # calculate offset
         # Firstly, get the product of the suffix array
@@ -403,10 +404,10 @@ class NDArray:
         for i in range(0, self.ndim):
             new_offset += idxs[i].start * suffix[i] 
 
-        self._shape = tuple(new_shape)
-        self._strides = tuple(new_strides)
-        self._offset = new_offset
-        return self
+        return self.as_strided(shape=tuple(new_shape), 
+                                strides = tuple(new_strides),
+                                offset=new_offset)
+        
         ### END YOUR SOLUTION
 
     def __setitem__(self, idxs, other):
