@@ -393,13 +393,8 @@ class NDArray:
             new_strides[i] = self._strides[i] * idxs[i].step
         
         # calculate offset
-        # Firstly, get the product of the suffix array
         for i in range(0, self.ndim):
             new_offset += self._strides[i] * idxs[i].start
-        
-        # new_shape = [math.ceil((sl.stop - sl.start) / sl.step) for sl in idxs]
-        # new_offset = sum([sl.start * st for sl, st in zip(idxs, self._strides)])
-        # new_strides = tuple([st * sl.step for st, sl in zip(self._strides, idxs)])
 
         return self.as_strided(shape=tuple(new_shape), 
                                 strides = tuple(new_strides),
