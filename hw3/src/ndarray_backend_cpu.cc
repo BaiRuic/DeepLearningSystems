@@ -313,7 +313,7 @@ void EwiseGe(const AlignedArray& a, const AlignedArray& b, AlignedArray* out) {
   for (size_t i = 0; i < a.size; i++) {
     out->ptr[i] = a.ptr[i] >= b.ptr[i];
   }
-}s
+}
 
 void ScalarGe(const AlignedArray& a, scalar_t val, AlignedArray* out) {
   /**
@@ -439,7 +439,13 @@ void ReduceMax(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
    */
 
   /// BEGIN YOUR SOLUTION
-  
+  size_t cnt = 0;
+  for(size_t i=0; i < a.size; i+=reduce_size){
+    scalar_t temp_val = a.ptr[i];
+    for(size_t j=1; j<reduce_size; j++)
+      temp_val = std::max(temp_val, a.ptr[i+j]);
+    out->ptr[cnt++] = temp_val;
+  }
   /// END YOUR SOLUTION
 }
 
@@ -454,7 +460,13 @@ void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
    */
 
   /// BEGIN YOUR SOLUTION
-  
+  size_t cnt = 0;
+  for(size_t i=0; i < a.size; i+=reduce_size){
+    scalar_t temp_val = a.ptr[i];
+    for(size_t j=1; j<reduce_size; j++)
+      temp_val += a.ptr[i+j];
+    out->ptr[cnt++] = temp_val;
+  }
   /// END YOUR SOLUTION
 }
 
