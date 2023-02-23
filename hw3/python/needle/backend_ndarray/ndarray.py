@@ -571,6 +571,8 @@ class NDArray:
             view = self.reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
             out = NDArray.make((1,) * self.ndim, device=self.device)
         else:
+            # 把要操作的 axis 放到最后！因为放到最后经过 compact() 之后，内存中是连续的
+            # 然后按照 self.shape[axis] 一组来执行操作，该参数即为传给cpp接口的第三个参数
             view = self.permute(
                 tuple([a for a in range(self.ndim) if a != axis]) + (axis,)
             )
