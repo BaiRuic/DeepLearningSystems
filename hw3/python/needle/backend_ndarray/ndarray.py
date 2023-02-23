@@ -389,20 +389,17 @@ class NDArray:
             new_shape[i] = math.ceil((idxs[i].stop - idxs[i].start) / idxs[i].step)
 
         # calculate new strides
-        items = 1
-        for i in range(-1, -self.ndim-1, -1):
-            new_strides[i] = items * idxs[i].step
-            items *= (self._shape[i])
-
+        for i in range(0, self.ndim):
+            new_strides[i] = self._strides[i] * idxs[i].step
         
         # calculate offset
         # Firstly, get the product of the suffix array
-        suffix = [1] * self.ndim
-        for i in range(-2, -self.ndim-1, -1):
-            suffix[i] = suffix[i+1] * self._shape[i+1]
-        # Then, add up the offsets of each dimension
         for i in range(0, self.ndim):
-            new_offset += idxs[i].start * suffix[i] 
+            new_offset += self._strides[i] * idxs[i].start
+        
+        # new_shape = [math.ceil((sl.stop - sl.start) / sl.step) for sl in idxs]
+        # new_offset = sum([sl.start * st for sl, st in zip(idxs, self._strides)])
+        # new_strides = tuple([st * sl.step for st, sl in zip(self._strides, idxs)])
 
         return self.as_strided(shape=tuple(new_shape), 
                                 strides = tuple(new_strides),
