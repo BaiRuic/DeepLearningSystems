@@ -43,7 +43,40 @@ void Fill(AlignedArray* out, scalar_t val) {
   }
 }
 
+enum strided_index_mode {INDEX_OUT, INDEX_IN, SET_VAL};
 
+void _strided_index_setter(const AlignedArray* a, AlignedArray* out, std::vector<uint32_t> shape,
+                    std::vector<uint32_t> strides, size_t offset, strided_index_mode mode, int val=-1) {
+  int depth = shape.size();
+  std::vector<uint32_t> loop(depth, 0);
+  int cnt = 0;
+  while (true) {
+    // inner loop
+    int index = offset;
+    for (int i = 0; i < depth; i++) {
+      index += strides[i] * loop[i];
+    }
+    switch (mode) {
+      case INDEX_OUT: out->ptr[index] = a->ptr[cnt++]; break;
+      case INDEX_IN: out->ptr[cnt++] = a->ptr[index]; break;
+      case SET_VAL: out->ptr[index] = val; break;
+    }
+
+    // increment
+    loop[depth - 1]++;
+
+    // carry
+    int idx = depth - 1;
+    while (loop[idx] == shape[idx]) {
+      if (idx == 0) {
+        // overflow
+        return;
+      }
+      loop[idx--] = 0;
+      loop[idx]++;
+    }
+  }
+}
 
 
 void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
@@ -63,7 +96,34 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN YOUR SOLUTION
+  size_t max_loop = strides.size();
+  size_t cnt = 0;
+  std::vector<uint16_t> stack;
+
+  // 将原始数组中的元素复制到压缩后数组中的指定位置
+  auto func = [&](std::vector<uint16_t>& stack) {
+    size_t idx = offset;
+    for(size_t i=0; i < stack.size(); i++){
+      idx += strides[i] * stack[i];
+    }
+    (*out).ptr[cnt++] = a.ptr[idx];
+  };
   
+  // 多重循环
+  std::function<void(size_t, size_t)> nested_for_loop = [&](size_t n, size_t max_n) {
+  // void nested_for_loop(size_t n, size_t max_n) {
+    if (n == max_n){
+      func(stack);
+      return;
+    }
+    for (size_t i=0; i < shape[n]; i++){
+      stack.push_back(i);
+      nested_for_loop(n+1, max_n);
+      stack.pop_back();
+    }
+  };
+
+  nested_for_loop(0, max_loop); 
   /// END YOUR SOLUTION
 }
 
@@ -80,7 +140,34 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN YOUR SOLUTION
+  size_t max_loop = strides.size();
+  size_t cnt = 0;
+  std::vector<uint16_t> stack;
+
+  // 将原始数组中的元素复制到压缩后数组中的指定位置
+  auto func = [&](std::vector<uint16_t>& stack) {
+    size_t idx = offset;
+    for(size_t i=0; i < stack.size(); i++){
+      idx += strides[i] * stack[i];
+    }
+    out->ptr[idx] = a.ptr[cnt++];
+  };
   
+  // 多重循环
+  std::function<void(size_t, size_t)> nested_for_loop = [&](size_t n, size_t max_n) {
+  // void nested_for_loop(size_t n, size_t max_n) {
+    if (n == max_n){
+      func(stack);
+      return;
+    }
+    for (size_t i=0; i < shape[n]; i++){
+      stack.push_back(i);
+      nested_for_loop(n+1, max_n);
+      stack.pop_back();
+    }
+  };
+
+  nested_for_loop(0, max_loop); 
   /// END YOUR SOLUTION
 }
 
@@ -101,7 +188,33 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    */
 
   /// BEGIN YOUR SOLUTION
+  size_t max_loop = strides.size();
+  std::vector<uint16_t> stack;
+
+  // 将原始数组中的元素复制到压缩后数组中的指定位置
+  auto func = [&](std::vector<uint16_t>& stack) {
+    size_t idx = offset;
+    for(size_t i=0; i < stack.size(); i++){
+      idx += strides[i] * stack[i];
+    }
+    out->ptr[idx] = val;
+  };
   
+  // 多重循环
+  std::function<void(size_t, size_t)> nested_for_loop = [&](size_t n, size_t max_n) {
+  // void nested_for_loop(size_t n, size_t max_n) {
+    if (n == max_n){
+      func(stack);
+      return;
+    }
+    for (size_t i=0; i < shape[n]; i++){
+      stack.push_back(i);
+      nested_for_loop(n+1, max_n);
+      stack.pop_back();
+    }
+  };
+
+  nested_for_loop(0, max_loop); 
   /// END YOUR SOLUTION
 }
 
