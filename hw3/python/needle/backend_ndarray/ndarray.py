@@ -544,7 +544,7 @@ class NDArray:
                     (a.shape[0] // tile, a.shape[1] // tile, tile, tile),
                     (a.shape[1] * tile, tile, self.shape[1], 1),
                 )
-
+            # Firstly, make the matrix with shape [a.shape[0] // tile, a.shape[1] // tile, tile, tile]
             t = self.device.__tile_size__
             a = tile(self.compact(), t).compact()
             b = tile(other.compact(), t).compact()
