@@ -82,27 +82,73 @@ void Fill(CudaArray* out, scalar_t val) {
 
 
 
-__global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, CudaVec shape,
-                              CudaVec strides, size_t offset) {
+CudaVec suffixProduct(const std::vector<uint32_t> shape){
   /**
-   * The CUDA kernel for the compact opeation.  This should effectively map a single entry in the 
-   * non-compact input a, to the corresponding item (at location gid) in the compact array out.
+   * Used to calculate the suffix product of shape, which is used to transform nth index
+   * to the index of ndarray
+  */
+  CudaVec suffix ;
+  suffix.size = shape.size();
+  suffix.data[suffix.size-1] = 1;
+  // Note, can not define a size_i, the type of i must be int 
+  for(int i=suffix.size-2; i>=0; i--){
+    suffix.data[i] = suffix.data[i+1] * shape[i+1];
+  }
+  return suffix;
+}
+
+__device__ size_t getIdx(size_t ith, CudaVec suffix, CudaVec shape, 
+                          CudaVec strides, size_t offset){
+    /**
+   * Get the actual index of an array element in memory. The index strategy
+   * is implemented in a modular fashion so that it is used by `Compact` and
+   * `…Setitem`.
    * 
    * Args:
-   *   a: CUDA pointer to a array
-   *   out: CUDA point to out array
-   *   size: size of out array
-   *   shape: vector of shapes of a and out arrays (of type CudaVec, for past passing to CUDA kernel)
-   *   strides: vector of strides of out array
-   *   offset: offset of out array
+   *   idx[uint32_t]   : index of the element in the (non-compact) array
+   *   carry[uint32_t*]: a pointer to the carry array
+   *   shape[CudaVec]  : shape   of the array
+   *   strides[CudaVec]: strides of the array
+   *   offset[size_t]  : offset  of the array
+   * 
+   * Returns:
+   *   uint32_t: index of the element in memory
    */
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t index = offset;
+  for(size_t i=0; i<suffix.size; i++){
+    index += strides.data[i] * ((ith / suffix.data[i]) % shape.data[i]);
+  }
+  return index;
+}
 
-  /// BEGIN YOUR SOLUTION
-  if (gid < size){
-    size_t index = ;
-    out[gid] = a[index];
-  /// END YOUR SOLUTION
+
+// Untility function to convert contiguous index i to memory location from strides
+
+__global__ void CompactKernel(const scalar_t* a, scalar_t* out,
+                              size_t size, CudaVec shape, CudaVec strides, size_t offset,
+                              CudaVec suffix)
+{
+    /**
+     * The CUDA kernel for the compact opeation. This should effectively map a
+     * single entry in the non-compact input `a`, to the corresponding item (at
+     * location `tid`) in the compact array `out`.
+     * 
+     * Args:
+     *   a  : CUDA pointer to array `a`
+     *   out: CUDA pointer to array `out`
+     *   size   : size   of `out` array
+     *   shape  : vector of shapes of `a` and `out` arrays
+     *            (of type CudaVec, for past passing to CUDA kernel)
+     *   strides: vector of strides of out array
+     *   offset : offset of `out` array
+     */
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    /// BEGIN YOUR SOLUTION
+    if (tid < size) {
+        out[tid] = a[getIdx(tid, suffix, shape, strides, offset)];
+    }
+    /// END YOUR SOLUTION
 }
 
 void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
@@ -124,12 +170,23 @@ void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
 
   // Nothing needs to be added here
   CudaDims dim = CudaOneDim(out->size);
+  CudaVec suffix = suffixProduct(shape);
   CompactKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, VecToCuda(shape),
-                                         VecToCuda(strides), offset);
+                                         VecToCuda(strides), offset, suffix);
 }
 
 
-
+__global__ void EwiseSetitemKernel(const scalar_t *a, scalar_t *out, size_t size,
+                                   CudaVec shape, CudaVec strides, size_t offset, CudaVec suffix){
+  /**
+   * 
+  */
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size){
+    size_t index = getIdx(gid, suffix, shape, strides, offset);
+    out[index] = a[gid];
+  }
+}
 
 void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
                   std::vector<uint32_t> strides, size_t offset) {
@@ -145,12 +202,25 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shap
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN YOUR SOLUTION
-
+  CudaDims dim = CudaOneDim(a.size);
+  CudaVec suffix = suffixProduct(shape);
+  EwiseSetitemKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, a.size, VecToCuda(shape),
+                                              VecToCuda(strides), offset, suffix);
   /// END YOUR SOLUTION
 }
 
 
-
+__global__ void ScalarSetitemKernel(scalar_t val, scalar_t* out, size_t size, CudaVec shape, 
+                                    CudaVec strides, size_t offset, CudaVec suffix){
+  /**
+   * 
+  */
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size){
+    size_t index = getIdx(gid, suffix, shape, strides, offset);
+    out[index] = val;
+  }
+}
 
 void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32_t> shape,
                    std::vector<uint32_t> strides, size_t offset) {
@@ -168,6 +238,10 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32
    *   offset: offset of the out array
    */
   /// BEGIN YOUR SOLUTION
+  CudaDims dim = CudaOneDim(size);
+  CudaVec suffix = suffixProduct(shape);
+  ScalarSetitemKernel<<<dim.grid, dim.block>>>(val, out->ptr, size, VecToCuda(shape),
+                                              VecToCuda(strides), offset, suffix);
   
   /// END YOUR SOLUTION
 }
