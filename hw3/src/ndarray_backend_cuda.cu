@@ -99,7 +99,9 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, Cud
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
 
   /// BEGIN YOUR SOLUTION
-  
+  if (gid < size){
+    size_t index = ;
+    out[gid] = a[index];
   /// END YOUR SOLUTION
 }
 
@@ -143,7 +145,7 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shap
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN YOUR SOLUTION
-  
+
   /// END YOUR SOLUTION
 }
 
